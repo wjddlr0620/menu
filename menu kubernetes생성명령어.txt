@@ -1,0 +1,74 @@
+
+#사전 수행 - 유용한 container-orchestration 예제다운 내부의 파일들 이용해서 쿠베서비스(yaml)만들기.
+#git clone https://github.com/event-storming/container-orchestration.git
+
+#MSA 메인 경로 만들기
+mkdir menuMSA
+cd menuMSA
+
+git clone https://github.com/ckdfuf2001/polyglot_menu_mysql.git
+
+##############깃 다운 했으면 여기서부터 시작하면됨 #### git clone 이후로 수행
+cd polyglot_menu_mysql/[mvn_project]polyglot_menu_rest_jpa_mysql  #경로로 이동
+
+##띄워놓은 DB ip/port로 application.yaml 수정
+kubectl get services 
+ex) mysql        ClusterIP   10.0.127.161   <none>        3306/TCP   7h6m
+-> application.yaml 에 10.0.127.161:3306 으로 변경
+
+nano ./src/main/resources/application.yml
+## ip port 수정
+-> spring.datasource.url: jdbc:mysql://10.0.127.161:3306/test?useUnicode=true&charaterEncoding=utf-8
+
+mvn package -Dmaven.test.skip=true
+
+az acr build --registry (coffeeacr) --image (coffeeacr).azurecr.io/menu:latest .
+kubectl create deploy menu --image=(coffeeacr).azurecr.io/menu:latest
+#kubectl get pods / kubectl logs <pod id> 로 이상 확인 후 없는 경우 아래 수행
+kubectl expose deploy menu --type="ClusterIP" --port=8080  #내부에서 쓸 포트 - 톰켓 거의 고정
+cd ..
+export CRNAME=(coffeeacr) 
+export ACR=${CRNAME}.azurecr.io
+
+
+
+<서버 접속>
+kubectl get services #다른곳에서 나를 잘 부를수 있는지 확인
+kubectl get pod #하여 해당하는 pod id찾아 접속 예 menu-cf6ff4d76-5dttv
+kubectl exec -it menu-cf6ff4d76-5dttv -- /bin/sh   #가끔 /bin/bash 인 경우 있음.
+
+<테스트용 httpie pods 생성>
+#사전 사항: istio 설치
+curl -L https://git.io/getLatestIstio | ISTIO_VERSION=1.4.3 sh -
+cd istio-1.4.3
+export PATH=$PWD/bin:$PATH
+for i in install/kubernetes/helm/istio-init/files/crd*yaml; do kubectl apply -f $i; done
+kubectl apply -f install/kubernetes/istio-demo.yaml
+kubectl create namespace istio-cb-ns
+#istio version #이 명령어로 버전확인하나.. azure cli라서 안되는 것으로 보임
+
+#httpie pod 생성
+cat <<EOF | kubectl apply -f -
+apiVersion: "v1"
+kind: "Pod"
+metadata: 
+  name: httpie
+  namespace: default #istio-cb-ns
+  labels: 
+    name: httpie
+spec: 
+  containers: 
+    - name: httpie
+      image: clue/httpie
+      command:
+        - sleep
+        - "360000"
+EOF
+
+<httpie pods 접속>
+kubectl exec -it httpie -- /bin/bash
+
+<이후 호출은 서비시 ip, port 확인 후 .. 알아서.. 아래는 http예>
+#http post <menu ip>:<menu port>/menus menuName="tes4"
+#http post 10.0.131.236:8080/menus menuName="test1"
+

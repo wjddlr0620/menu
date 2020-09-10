@@ -1,0 +1,48 @@
+기본 www.msaez.io 에서 h2database로 내려 받은후 수정한 내용
+
+########################## 아래 3개만 수행 ############################
+<menu 프로그램 코드 변경 내용>
+1) pom에 추가/변경
+<!-- h2 삭제 후 아래 추가-->
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+</dependency>
+
+
+2) application.yml 맨위에 추가 - 포트 위
+spring.datasource.driverClassName: com.mysql.jdbc.Driver
+spring.datasource.url: jdbc:mysql://127.0.0.1:9876/test?useUnicode=true&charaterEncoding=utf-8
+spring.datasource.username: root
+spring.datasource.password: password
+spring.jpa.hibernate.ddl-auto: true
+
+
+3)코드상 menu.java auto 부분 변경 (identity)
+@GeneratedValue(strategy=GenerationType.IDENTITY )
+
+######################################################################
+#같은 sql db(crud사용)는 위에 추가만 하면되나....
+#몽고같은 no sql 디비는..... crud가 다르게 동작해서 rest(@Autowire) 와 jpa(@PostUpdate) 등의 수행에서 막힌다...
+#no sql 쓸거면 저 모든 것을 직접 구현하거나.. jdbc 드라이버 통해서 crud 형태로 수행해야하는데.. 제대로된 mongo용 jdbc 를 못찾아서 하루 날림..
+#그냥 sql db 쓰세요
+
+
+######################################################################
+##참고 위에 azure 클라우드 말고 
+#msaez lab에서 ide로 수행시 도커로 간단하게... db 구현 방법 
+#### kubernetes mysqlDB 생성했으면 안해도 됨 
+<menu 서비스가 올라갈 로컬에서 직접 수행>
+(lab vm에서도 수행가능)
+docker run -d -p 9876:3306 --name=mysqldb -e MYSQL_ROOT_PASSWORD=password mysql:5.6
+docker exec -i -t mysqldb /bin/bash  
+mysql -u root -p
+>password
+create database test;
+show databases;
+CREATE TABLE menu_table (
+  menu_id INT(11) unsigned NOT NULL AUTO_increment primary key,
+  menu_name VARCHAR(32),
+  price INT(11),
+  abailable VARCHAR(32)
+);

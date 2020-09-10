@@ -1,0 +1,10 @@
+coffee/MenuUpdate.class
+coffee/AbstractEvent$1.class
+coffee/PolicyHandler.class
+coffee/MenuController.class
+coffee/MenuRegisted.class
+coffee/Menu.class
+coffee/MenuRepository.class
+coffee/MenuApplication.class
+coffee/config/kafka/KafkaProcessor.class
+coffee/AbstractEvent.class
